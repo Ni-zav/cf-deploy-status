@@ -42,3 +42,7 @@ export function statusColor(status: DeploymentEvent["status"]): number {
     case "skipped": return 0x6e7681;
   }
 }
+
+function escapeInlineCode(value: string): string {
+  return value.replace(/`/g, "'").trim();
+}

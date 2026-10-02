@@ -85,7 +85,7 @@ export function deploymentToEvent(deployment: PagesDeployment, project: ProjectC
   if (branch) event.branch = branch;
   if (deployment.url) event.deploymentUrl = deployment.url;
   const commitSha = deployment.deployment_trigger?.metadata?.commit_hash;
-  const commmitMessage = deployment.deployment_trigger?.metadata?.commit_message;
+  const commitMessage = deployment.deployment_trigger?.metadata?.commit_message;
   if (commitSha) event.commitSha = commitSha;
   if (commitMessage) event.commitMessage = commitMessage;
   if (startedAt) event.startedAt = startedAt;

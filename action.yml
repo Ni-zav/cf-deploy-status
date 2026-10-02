@@ -1,0 +1,101 @@
+name: Report Cloudflare deployment to cf-deploy-status
+description: Report a Workers or Pages deployment result to a self-hosted cf-deploy-status instance.
+author: Ni-zav
+branding:
+  icon: activity
+  color: orange
+inputs:
+  endpoint:
+    description: Base URL of the deployed cf-deploy-status Worker.
+    required: true
+  token:
+    description: INGEST_SHARED_SECRET configured on cf-deploy-status.
+    required: true
+  product:
+    description: workers or pages.
+    required: true
+  project:
+    description: Cloudflare Worker script or Pages project name.
+    required: true
+  status:
+    description: started, succeeded, failed, canceled, or skipped.
+    required: true
+  environment:
+    description: Normalized environment such as production or staging.
+    required: false
+  provider-environment:
+    description: Cloudflare-native environment, e.g. production or preview for Pages.
+    required: false
+  branch:
+    description: Git branch. Defaults to GITHUB_REF_NAME.
+    required: false
+  deployment-id:
+    description: Cloudflare deployment ID when available.
+    required: false
+  build-id:
+    description: Cloudflare build ID when available.
+    required: false
+  deployment-url:
+    description: Deployment URL when available.
+    required: false
+  commit-sha:
+    description: Commit SHA. Defaults to GITHUB_SHA.
+    required: false
+  commit-message:
+    description: Commit message.
+    required: false
+  actor:
+    description: Actor. Defaults to GITHUB_ACTOR.
+    required: false
+  source:
+    description: github-actions or wrangler-wrapper.
+    default: github-actions
+  error-summary:
+    description: Short failure excerpt. Avoid passing complete logs or secrets.
+    required: false
+  repo:
+    description: Repository. Defaults to GITHUB_REPOSITORY.
+    required: false
+  run-id:
+    description: Run ID. Defaults to GITHUB_RUN_ID.
+    required: false
+  job:
+    description: Job name. Defaults to GITHUB_JOB.
+    required: false
+  fail-on-error:
+    description: Fail this action if reporting fails. Defaults to false so notification outages do not mask deploy results.
+    default: "false"
+outputs:
+  reported:
+    description: true when the event was accepted.
+    value: ${{ steps.report.outputs.reported }}
+  event-id:
+    description: Event ID returned by cf-deploy-status.
+    value: ${{ steps.report.outputs.event-id }}
+runs:
+  using: composite
+  steps:
+    - id: report
+      shell: bash
+      env:
+        INPUT_ENDPOINT: ${{ inputs.endpoint }}
+        INPUT_TOKEN: ${{ inputs.token }}
+        INPUT_PRODUCT: ${{ inputs.product }}
+        INPUT_PROJECT: ${{ inputs.project }}
+        INPUT_STATUS: ${{ inputs.status }}
+        INPUT_ENVIRONMENT: ${{ inputs.environment }}
+        INPUT_PROVIDER_ENVIRONMENT: ${{ inputs.provider-environment }}
+        INPUT_BRANCH: ${{ inputs.branch }}
+        INPUT_DEPLOYMENT_ID: ${{ inputs.deployment-id }}
+        INPUT_BUILD_ID: ${{ inputs.build-id }}
+        INPUT_DEPLOYMENT_URL: ${{ inputs.deployment-url }}
+        INPUT_COMMIT_SHA: ${{ inputs.commit-sha }}
+        INPUT_COMMIT_MESSAGE: ${{ inputs.commit-message }}
+        INPUT_ACTOR: ${{ inputs.actor }}
+        INPUT_SOURCE: ${{ inputs.source }}
+        INPUT_ERROR_SUMMARY: ${{ inputs.error-summary }}
+        INPUT_REPO: ${{ inputs.repo }}
+        INPUT_RUN_ID: ${{ inputs.run-id }}
+        INPUT_JOB: ${{ inputs.job }}
+        INPUT_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+      run: node "$GITHUB_ACTION_PATH/scripts/report-ci.mjs"

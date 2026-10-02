@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cf-deploy-status",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "observability": {
+    "enabled": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "STATE"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "EVENTS",
+        "queue": "cf-deploy-events"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "cf-deploy-events",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 5,
+        "retry_delay": 15,
+        "dead_letter_queue": "cf-deploy-events-dlq"
+      }
+    ]
+  },
+  "triggers": {
+    "crons": ["* * * * *"]
+  },
+  "vars": {
+    "PROJECTS_JSON": "[]",
+    "CLOUDFLARE_ACCOUNT_ID": "",
+    "NOTIFY_STARTED": "true",
+    "NOTIFY_ON_BOOTSTRAP": "false",
+    "ERROR_SUMMARY_MAX_CHARS": "1200",
+    "STATE_TTL_SECONDS": "2592000"
+  }
+}

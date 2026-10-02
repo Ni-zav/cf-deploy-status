@@ -1,0 +1,37 @@
+name: Deploy Worker with status reporting
+
+on:
+  push:
+    branches: [main, staging]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Deploy to Cloudflare
+        id: deploy
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy ${{ github.ref_name == 'staging' && '--env staging' || '' }}
+
+      - name: Report deployment
+        if: always()
+        uses: Ni-zav/cf-deploy-status@main
+        with:
+          endpoint: ${{ secrets.CF_DEPLOY_STATUS_URL }}
+          token: ${{ secrets.CF_DEPLOY_STATUS_TOKEN }}
+          product: workers
+          project: my-worker
+          environment: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          status: ${{ steps.deploy.outcome == 'success' && 'succeeded' || 'failed' }}
+          deployment-url: ${{ steps.deploy.outputs.deployment-url }}
+          error-summary: ${{ steps.deploy.outputs.command-stderr }}
+
+      - name: Preserve deployment failure
+        if: steps.deploy.outcome == 'failure'
+        run: exit 1

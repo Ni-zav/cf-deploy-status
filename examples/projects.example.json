@@ -1,0 +1,26 @@
+[
+  {
+    "product": "pages",
+    "name": "sveindonesia",
+    "branchEnvironmentMap": {
+      "main": "production",
+      "staging": "staging"
+    },
+    "defaultPreviewEnvironment": "preview"
+  },
+  {
+    "product": "workers",
+    "name": "neos-api",
+    "branchEnvironmentMap": {
+      "main": "production",
+      "staging": "staging"
+    },
+    "reconcile": false
+  },
+  {
+    "product": "workers",
+    "name": "manually-deployed-worker",
+    "environment": "production",
+    "reconcile": true
+  }
+]

@@ -2,6 +2,9 @@
 
 Self-hosted Cloudflare deployment notifications for **Workers and Pages**.
 
+[![CI](https://github.com/Ni-zav/cf-deploy-status/actions/workflows/ci.yml/badge.svg)](https://github.com/Ni-zav/cf-deploy-status/actions/workflows/ci.yml)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/Ni-zav/cf-deploy-status)
+
 It runs as a Cloudflare Worker and combines native Workers Builds events, Pages deployment polling, optional Cloudflare Pages webhooks, direct CI/Wrangler reports, and optional Worker deployment reconciliation into one normalized event stream.
 
 ## What it gives you
@@ -41,12 +44,26 @@ Workers deployment-history reconciliation is available as an optional safety net
 
 ## Deploy
 
+### One-click deployment
+
+Use the **Deploy to Cloudflare** button above. Cloudflare clones the repository into your account, provisions the declared KV namespace and Queues, configures Workers Builds, and deploys the Worker. The repository includes binding descriptions and a `.dev.vars.example` so the setup flow can explain the required and optional secrets.
+
+After deployment, configure at least one notification destination and then check:
+
+```text
+GET https://<worker>/readyz
+```
+
+A healthy installation returns HTTP 200. A misconfigured installation returns HTTP 503 with concrete issues instead of silently dropping deployment events.
+
+### Manual deployment
+
 Requirements: Node.js 22+, a Cloudflare account, and Wrangler authentication.
 
 ```bash
 git clone https://github.com/Ni-zav/cf-deploy-status.git
 cd cf-deploy-status
-npm install
+npm ci --legacy-peer-deps
 npx wrangler login
 ```
 
@@ -178,7 +195,7 @@ This repo is itself a composite GitHub Action:
 
 - name: Report Cloudflare deploy
   if: always()
-  uses: Ni-zav/cf-deploy-status@main
+  uses: Ni-zav/cf-deploy-status@v1
   with:
     endpoint: ${{ secrets.CF_DEPLOY_STATUS_URL }}
     token: ${{ secrets.CF_DEPLOY_STATUS_TOKEN }}
@@ -219,8 +236,9 @@ This is deliberately opt-in. It cannot detect a failed local/API upload that nev
 
 | Endpoint | Auth | Purpose |
 |---|---|---|
-| `GET /` | none | service metadata / health |
-| `GET /healthz` | none | health check |
+| `GET /` | none | service metadata |
+| `GET /healthz` | none | liveness check; independent of configuration |
+| `GET /readyz` | none | readiness check; 503 when required bindings/config/destinations are unusable |
 | `POST /v1/events/ci` | Bearer `INGEST_SHARED_SECRET` | CI/Wrangler result ingestion |
 | `POST /v1/events/cloudflare/pages` | `cf-webhook-auth` | Pages Project Updates webhook |
 | `POST /v1/test` | Bearer `INGEST_SHARED_SECRET` | enqueue a synthetic test event |
@@ -241,7 +259,15 @@ Queue processing uses deterministic event IDs plus two layers of KV state:
 - `processed:<eventId>` prevents a completed event from being processed twice.
 - `delivered:<eventId>:<destination>` prevents a successful Discord/Slack/generic delivery from being repeated when another destination fails and the Queue retries the message.
 
-Transient delivery errors are retried by the Queue. Messages that exhaust the configured retries are routed to `cf-deploy-events-dlq`.
+Transient delivery errors are retried by the Queue. Messages that exhaust the configured retries are routed to `cf-deploy-events-dlq`. An installation with zero configured destinations is treated as a delivery failure, so the Queue retries and eventually sends the event to the DLQ instead of acknowledging it as processed.
+
+### Delivery semantics
+
+Cloudflare Queues provides **at-least-once** delivery, so a message can occasionally be delivered more than once. The deterministic event IDs and KV receipt keys make duplicate notifications unlikely in normal operation, but this is **best-effort idempotency**, not an exactly-once guarantee.
+
+Workers KV is eventually consistent across locations. A recently written receipt can therefore be temporarily invisible elsewhere. If your generic webhook performs non-idempotent side effects, use `event.eventId` as an idempotency key at the receiver as well. For workloads that require strict atomic deduplication, use a stronger consistency primitive such as Durable Objects rather than relying on KV alone.
+
+References: [Queues delivery guarantees](https://developers.cloudflare.com/queues/reference/delivery-guarantees/) and [Workers KV consistency](https://developers.cloudflare.com/kv/concepts/how-kv-works/).
 
 ## API token permissions
 
@@ -269,13 +295,13 @@ Local secret/value examples are in `.dev.vars.example`.
 ## Development
 
 ```bash
-npm install
+npm ci --legacy-peer-deps
 npm run typecheck
 npm test
 npm run dev
 ```
 
-CI runs type checking and Vitest on pushes to `main` and pull requests.
+CI uses the committed lockfile, runs TypeScript + Vitest, validates the Wrangler deployment bundle with `wrangler deploy --dry-run`, and audits runtime dependencies.
 
 ## Repository layout
 
@@ -287,8 +313,8 @@ src/
   state/          KV idempotency/state
 scripts/          setup + CI reporting helpers
 examples/         project config + GitHub Actions example
-test/             normalization and formatting tests
-docs/             architecture/research notes
+test/             normalization, HTTP, Queue, delivery, and reconciliation tests
+docs/             architecture, operations, release, and research notes
 action.yml        reusable GitHub reporting action
 wrangler.jsonc    deployable Cloudflare infrastructure/runtime config
 ```
@@ -298,6 +324,16 @@ wrangler.jsonc    deployable Cloudflare infrastructure/runtime config
 The design rationale, Cloudflare capability matrix, limitations, and open-source comparison are documented in:
 
 `docs/2026-10-02-cloudflare-deploy-notifications-research.md`
+
+## Releases and GitHub Action versioning
+
+Stable action consumers should use the moving major tag:
+
+```yaml
+uses: Ni-zav/cf-deploy-status@v1
+```
+
+Release tags use semantic versions such as `v1.0.0`. The release workflow validates the tagged commit, creates the GitHub Release, then advances the compatible `v1` and `v1.0` tags. See `docs/RELEASE.md` for the release gate and dogfood checklist.
 
 ## Security
 

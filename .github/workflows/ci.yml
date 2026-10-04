@@ -20,5 +20,6 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - run: npm run check
       - run: npx wrangler deploy --dry-run
+      - run: npm run deploy -- --dry-run
       - name: Audit runtime dependencies
         run: npm audit --omit=dev --audit-level=high

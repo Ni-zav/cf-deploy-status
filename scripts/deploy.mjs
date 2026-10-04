@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
+import { readWranglerConfig } from "./read-config.mjs";
 
 export function prepareDeploymentConfig(base) {
   const config = structuredClone(base);
@@ -16,7 +17,7 @@ export function prepareDeploymentConfig(base) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const config = prepareDeploymentConfig(JSON.parse(fs.readFileSync("wrangler.jsonc", "utf8")));
+  const config = prepareDeploymentConfig(readWranglerConfig());
   fs.writeFileSync("wrangler.deploy.json", JSON.stringify(config, null, 2) + "\n");
   const result = spawnSync("npx", ["wrangler", "deploy", "--config", "wrangler.deploy.json", ...process.argv.slice(2)], {
     stdio: "inherit",

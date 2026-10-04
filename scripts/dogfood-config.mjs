@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
+import { readWranglerConfig } from "./read-config.mjs";
 
 export function createDogfoodConfig(base, env) {
   const config = structuredClone(base);
@@ -26,6 +27,6 @@ export function createDogfoodConfig(base, env) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const config = createDogfoodConfig(JSON.parse(fs.readFileSync("wrangler.jsonc", "utf8")), process.env);
+  const config = createDogfoodConfig(readWranglerConfig(), process.env);
   fs.writeFileSync("wrangler.dogfood.json", JSON.stringify(config, null, 2) + "\n");
 }

@@ -36,6 +36,7 @@ jobs:
         run: |
           npm run check
           npx wrangler deploy --dry-run
+          npm run deploy -- --dry-run
           npm audit --omit=dev --audit-level=high
 
       - name: Derive compatible action tags

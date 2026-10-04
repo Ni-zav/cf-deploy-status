@@ -7,6 +7,10 @@ This repository ships two things from one versioned source tree:
 
 The Worker is distributed through **Deploy to Cloudflare** / Wrangler. It is intentionally not published as an npm runtime package. The GitHub Action is consumed through semantic Git tags such as `@v1`.
 
+## Current v1 evidence
+
+The sanitized release-candidate evidence for the current v1 effort is tracked in `docs/releases/v1.0.0-rc-evidence.md`. Keep account-specific URLs, tokens, and raw screenshots local.
+
 ## v1 release gate
 
 A v1 release is ready only when all of the following are true:

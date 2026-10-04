@@ -22,6 +22,7 @@ jobs:
       CF_DEPLOY_STATUS_PAGES_WEBHOOK_SECRET: ${{ secrets.CF_DEPLOY_STATUS_PAGES_WEBHOOK_SECRET }}
       DOGFOOD_PROJECTS_JSON: ${{ vars.CF_DEPLOY_STATUS_PROJECTS_JSON || '[]' }}
       DOGFOOD_WORKER_NAME: ${{ vars.CF_DEPLOY_STATUS_WORKER_NAME || 'cf-deploy-status' }}
+      DOGFOOD_WORKERS_BUILD_PROJECTS: ${{ vars.CF_DEPLOY_STATUS_WORKERS_BUILD_PROJECTS }}
 
     steps:
       - uses: actions/checkout@v6
@@ -85,6 +86,14 @@ jobs:
           put_secret GENERIC_WEBHOOK_SECRET "$CF_DEPLOY_STATUS_GENERIC_WEBHOOK_SECRET"
           put_secret PAGES_WEBHOOK_SECRET "$CF_DEPLOY_STATUS_PAGES_WEBHOOK_SECRET"
 
+      - name: Subscribe dogfood Workers Builds projects
+        if: env.DOGFOOD_WORKERS_BUILD_PROJECTS != ''
+        shell: bash
+        run: |
+          normalized="${DOGFOOD_WORKERS_BUILD_PROJECTS//,/ }"
+          read -r -a workers <<< "$normalized"
+          WRANGLER_CONFIG=wrangler.dogfood.json npm run subscribe:workers -- "${workers[@]}"
+
       - name: Verify readiness
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
@@ -96,7 +105,7 @@ jobs:
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
         run: |
-          for status in succeeded failed; do
+          for status in succeeded failed canceled; do
             curl --fail --silent --show-error \
               -X POST "$DEPLOYMENT_URL/v1/test" \
               -H "Authorization: Bearer $CF_DEPLOY_STATUS_TOKEN" \

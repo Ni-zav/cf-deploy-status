@@ -53,6 +53,17 @@ describe("normalization", () => {
     expect(event?.eventId).toBe("workers-build:build-1:succeeded");
   });
 
+  it.each(["canceled", "cancelled"])("preserves %s outcomes on Workers Builds failure events", (buildOutcome) => {
+    const event = normalizeWorkersBuildEvent({
+      type: "cf.workersBuilds.worker.build.failed",
+      source: { type: "workersBuilds.worker", workerName: "api" },
+      payload: { buildUuid: "build-cancel", buildOutcome },
+    }, env());
+    expect(event?.status).toBe("canceled");
+    expect(event?.eventId).toBe("workers-build:build-cancel:canceled");
+    expect(event?.errorSummary).toBeUndefined();
+  });
+
   it("normalizes Pages deployment", () => {
     const project: ProjectConfig = {
       product: "pages",

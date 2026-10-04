@@ -17,7 +17,7 @@ export function normalizeWorkersBuildEvent(raw: WorkersBuildEvent, env: Env): De
   const type = raw.type?.toLowerCase() ?? "";
   if (type.endsWith(".build.started")) status = "started";
   else if (type.endsWith(".build.succeeded")) status = "succeeded";
-  else if (type.endsWith(".build.failed")) status = raw.payload?.buildOutcome === "canceled" ? "canceled" : "failed";
+  else if (type.endsWith(".build.failed")) status = status === "canceled" ? "canceled" : "failed";
   else if (type.endsWith(".build.canceled") || type.endsWith(".build.cancelled")) status = "canceled";
   if (!status) return null;
 

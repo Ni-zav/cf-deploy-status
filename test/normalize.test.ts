@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { resolveEnvironment } from "../src/config";
 import { normalizeCiPayload } from "../src/sources/ci";
 import { deploymentToEvent } from "../src/sources/pages-api";
+import { normalizePagesWebhook } from "../src/sources/pages-webhook";
 import { normalizeWorkersBuildEvent } from "../src/sources/workers-builds";
 import { normalizeStatus, timingSafeEqual } from "../src/utils";
 import type { Env, ProjectConfig } from "../src/types";
@@ -17,6 +18,27 @@ const env = (overrides: Partial<Env> = {}): Env => ({
 });
 
 describe("normalization", () => {
+  it.each([
+    ["ENVIRONMENT_PREVIEW", "preview"],
+    ["ENVIRONMENT_PRODUCTION", "production"],
+  ])("normalizes native Pages %s alerts and prefers the deployment-specific URL", (rawEnvironment, expectedEnvironment) => {
+    const event = normalizePagesWebhook({
+      alert_type: "pages_event_alert",
+      data: {
+        event: "EVENT_DEPLOYMENT_SUCCESS", project_name: "site", deployment_id: "native-preview",
+        environment: rawEnvironment, preview_url: "https://deployment.example.test",
+        branch_alias_url: "https://branch.example.test", pages_dev_url: "https://project.example.test",
+        commit_hash: "abcdef123456",
+      },
+    }, env());
+    expect(event.status).toBe("succeeded");
+    expect(event.providerEnvironment).toBe(expectedEnvironment);
+    expect(event.environment).toBe(expectedEnvironment);
+    expect(event.deploymentUrl).toBe("https://deployment.example.test");
+    expect(event.commitSha).toBe("abcdef123456");
+    expect(event.branch).toBeUndefined();
+  });
+
   it("maps provider statuses", () => {
     expect(normalizeStatus("active")).toBe("started");
     expect(normalizeStatus("success")).toBe("succeeded");

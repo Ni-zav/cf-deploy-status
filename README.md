@@ -185,6 +185,8 @@ POST https://<cf-deploy-status-worker>/v1/events/cloudflare/pages
 
 Set the same secret in Cloudflare's generic webhook configuration and `PAGES_WEBHOOK_SECRET`. The Worker validates Cloudflare's `cf-webhook-auth` header.
 
+Cloudflare's destination-validation test is acknowledged without sending a deployment notification. Native Pages alerts provide a deployment URL and provider environment, but the observed payload does not include a branch name. Use Pages API polling when branch-to-environment mapping is required.
+
 The API poller can remain enabled as reconciliation; matching deployment/status IDs deduplicate naturally.
 
 ## Direct Wrangler / GitHub Actions

@@ -40,7 +40,9 @@ export function normalizePagesWebhook(payload: PagesWebhookPayload, env: Env): D
 
   const data = payload.data;
   const projectName = stringValue(data, "project_name", "projectName", "project") ?? payload.policy_name ?? "cloudflare-pages";
-  const providerEnvironment = stringValue(data, "environment", "provider_environment");
+  const rawEnvironment = stringValue(data, "environment", "provider_environment");
+  const providerEnvironment = rawEnvironment === "ENVIRONMENT_PREVIEW" ? "preview" :
+    rawEnvironment === "ENVIRONMENT_PRODUCTION" ? "production" : rawEnvironment;
   const branch = stringValue(data, "branch", "deployment_branch");
   const deploymentId = stringValue(data, "deployment_id", "deploymentId", "id");
   const correlationId = payload.alert_correlation_id ?? payload.policy_id ?? `${payload.ts ?? Date.now()}`;
@@ -64,7 +66,7 @@ export function normalizePagesWebhook(payload: PagesWebhookPayload, env: Env): D
   if (providerEnvironment) event.providerEnvironment = providerEnvironment;
   if (branch) event.branch = branch;
   if (deploymentId) event.deploymentId = deploymentId;
-  const deploymentUrl = stringValue(data, "deployment_url", "deploymentUrl", "url");
+  const deploymentUrl = stringValue(data, "deployment_url", "deploymentUrl", "url", "preview_url", "branch_alias_url", "pages_dev_url");
   const commitSha = stringValue(data, "commit_hash", "commitHash", "commit_sha");
   const commitMessage = stringValue(data, "commit_message", "commitMessage");
   if (deploymentUrl) event.deploymentUrl = deploymentUrl;

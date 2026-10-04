@@ -1,0 +1,36 @@
+name: Refresh v1 lockfile
+
+on:
+  push:
+    branches: [release/v1-hardening]
+    paths:
+      - package.json
+      - .github/workflows/v1-lockfile.yml
+
+permissions:
+  contents: write
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: release/v1-hardening
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Refresh package-lock.json
+        run: npm install --package-lock-only --legacy-peer-deps
+      - name: Commit canonical lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if git diff --cached --quiet; then
+            echo "Lockfile already current"
+          else
+            git commit -m "build: refresh reproducible package lock"
+            git pull --rebase origin release/v1-hardening
+            git push origin HEAD:release/v1-hardening
+          fi

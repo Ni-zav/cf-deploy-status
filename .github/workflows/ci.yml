@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, release/v1-hardening]
   pull_request:
 
 permissions:
@@ -16,6 +16,9 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-      - run: npm install --legacy-peer-deps
+          cache: npm
+      - run: npm ci --legacy-peer-deps
       - run: npm run check
       - run: npx wrangler deploy --dry-run
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=high

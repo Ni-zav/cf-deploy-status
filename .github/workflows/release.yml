@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify tagged commit is on main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Release tags must point to a commit already merged into main."
+            exit 1
+          fi
+
+      - name: Install locked dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Validate release candidate
+        run: |
+          npm run check
+          npx wrangler deploy --dry-run
+          npm audit --omit=dev --audit-level=high
+
+      - name: Derive compatible action tags
+        id: aliases
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          IFS=. read -r major minor patch <<< "$version"
+          if [[ -z "$major" || -z "$minor" || -z "$patch" ]]; then
+            echo "Unexpected semantic version: $GITHUB_REF_NAME"
+            exit 1
+          fi
+          echo "major=v$major" >> "$GITHUB_OUTPUT"
+          echo "minor=v$major.$minor" >> "$GITHUB_OUTPUT"
+
+      - name: Advance moving action tags
+        env:
+          MAJOR_TAG: ${{ steps.aliases.outputs.major }}
+          MINOR_TAG: ${{ steps.aliases.outputs.minor }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f "$MAJOR_TAG" "$GITHUB_SHA"
+          git tag -f "$MINOR_TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$MAJOR_TAG" --force
+          git push origin "refs/tags/$MINOR_TAG" --force
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --generate-notes \
+            --title "cf-deploy-status $GITHUB_REF_NAME"

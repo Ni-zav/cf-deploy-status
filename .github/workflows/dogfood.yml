@@ -1,0 +1,127 @@
+name: Dogfood Cloudflare deployment
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  dogfood:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_DEPLOY_STATUS_TOKEN: ${{ secrets.CF_DEPLOY_STATUS_TOKEN }}
+      CF_DEPLOY_STATUS_READ_TOKEN: ${{ secrets.CF_DEPLOY_STATUS_READ_TOKEN }}
+      CF_DEPLOY_STATUS_DISCORD_WEBHOOK_URL: ${{ secrets.CF_DEPLOY_STATUS_DISCORD_WEBHOOK_URL }}
+      CF_DEPLOY_STATUS_SLACK_WEBHOOK_URL: ${{ secrets.CF_DEPLOY_STATUS_SLACK_WEBHOOK_URL }}
+      CF_DEPLOY_STATUS_GENERIC_WEBHOOK_URL: ${{ secrets.CF_DEPLOY_STATUS_GENERIC_WEBHOOK_URL }}
+      CF_DEPLOY_STATUS_GENERIC_WEBHOOK_SECRET: ${{ secrets.CF_DEPLOY_STATUS_GENERIC_WEBHOOK_SECRET }}
+      CF_DEPLOY_STATUS_PAGES_WEBHOOK_SECRET: ${{ secrets.CF_DEPLOY_STATUS_PAGES_WEBHOOK_SECRET }}
+      DOGFOOD_PROJECTS_JSON: ${{ vars.CF_DEPLOY_STATUS_PROJECTS_JSON || '[]' }}
+      DOGFOOD_WORKER_NAME: ${{ vars.CF_DEPLOY_STATUS_WORKER_NAME || 'cf-deploy-status' }}
+      DOGFOOD_WORKERS_BUILD_PROJECTS: ${{ vars.CF_DEPLOY_STATUS_WORKERS_BUILD_PROJECTS }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Validate required deployment credentials
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing CLOUDFLARE_API_TOKEN"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing CLOUDFLARE_ACCOUNT_ID"; exit 1; }
+          test -n "$CF_DEPLOY_STATUS_TOKEN" || { echo "Missing CF_DEPLOY_STATUS_TOKEN"; exit 1; }
+          if [[ -z "$CF_DEPLOY_STATUS_DISCORD_WEBHOOK_URL" && -z "$CF_DEPLOY_STATUS_SLACK_WEBHOOK_URL" && -z "$CF_DEPLOY_STATUS_GENERIC_WEBHOOK_URL" ]]; then
+            echo "Configure at least one CF_DEPLOY_STATUS_* webhook destination secret."
+            exit 1
+          fi
+
+      - name: Build dogfood Wrangler configuration
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const config = JSON.parse(fs.readFileSync("wrangler.jsonc", "utf8"));
+          config.name = process.env.DOGFOOD_WORKER_NAME;
+          config.vars.CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
+          config.vars.PROJECTS_JSON = process.env.DOGFOOD_PROJECTS_JSON || "[]";
+          fs.writeFileSync("wrangler.dogfood.json", JSON.stringify(config, null, 2) + "\n");
+          NODE
+
+      - name: Deploy dogfood Worker
+        id: deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.146.0"
+          command: deploy --config wrangler.dogfood.json
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure runtime secrets
+        shell: bash
+        run: |
+          put_secret() {
+            local binding="$1"
+            local value="$2"
+            if [[ -n "$value" ]]; then
+              printf '%s' "$value" | npx wrangler secret put "$binding" --config wrangler.dogfood.json
+            fi
+          }
+
+          put_secret INGEST_SHARED_SECRET "$CF_DEPLOY_STATUS_TOKEN"
+          put_secret CLOUDFLARE_API_TOKEN "$CF_DEPLOY_STATUS_READ_TOKEN"
+          put_secret DISCORD_WEBHOOK_URL "$CF_DEPLOY_STATUS_DISCORD_WEBHOOK_URL"
+          put_secret SLACK_WEBHOOK_URL "$CF_DEPLOY_STATUS_SLACK_WEBHOOK_URL"
+          put_secret GENERIC_WEBHOOK_URL "$CF_DEPLOY_STATUS_GENERIC_WEBHOOK_URL"
+          put_secret GENERIC_WEBHOOK_SECRET "$CF_DEPLOY_STATUS_GENERIC_WEBHOOK_SECRET"
+          put_secret PAGES_WEBHOOK_SECRET "$CF_DEPLOY_STATUS_PAGES_WEBHOOK_SECRET"
+
+      - name: Subscribe dogfood Workers Builds projects
+        if: env.DOGFOOD_WORKERS_BUILD_PROJECTS != ''
+        shell: bash
+        run: |
+          normalized="${DOGFOOD_WORKERS_BUILD_PROJECTS//,/ }"
+          read -r -a workers <<< "$normalized"
+          WRANGLER_CONFIG=wrangler.dogfood.json npm run subscribe:workers -- "${workers[@]}"
+
+      - name: Verify readiness
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          test -n "$DEPLOYMENT_URL" || { echo "Wrangler did not return a deployment URL"; exit 1; }
+          curl --fail --silent --show-error "$DEPLOYMENT_URL/readyz"
+
+      - name: Emit synthetic success and failure
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          for status in succeeded failed canceled; do
+            curl --fail --silent --show-error \
+              -X POST "$DEPLOYMENT_URL/v1/test" \
+              -H "Authorization: Bearer $CF_DEPLOY_STATUS_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"product\":\"workers\",\"project\":\"$DOGFOOD_WORKER_NAME\",\"status\":\"$status\",\"environment\":\"dogfood\"}"
+          done
+
+      - name: Report the real dogfood deployment through cf-deploy-status
+        uses: ./
+        with:
+          endpoint: ${{ steps.deploy.outputs.deployment-url }}
+          token: ${{ secrets.CF_DEPLOY_STATUS_TOKEN }}
+          product: workers
+          project: ${{ env.DOGFOOD_WORKER_NAME }}
+          environment: dogfood
+          status: succeeded
+          deployment-url: ${{ steps.deploy.outputs.deployment-url }}
+          commit-sha: ${{ github.sha }}
+          source: github-actions

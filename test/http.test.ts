@@ -45,6 +45,19 @@ describe("HTTP handlers", () => {
     );
   });
 
+  it("describes empty monitor configuration without excluding subscribed build events", async () => {
+    const { env } = createTestEnv({
+      GENERIC_WEBHOOK_URL: "https://hooks.example.test/deploy",
+      INGEST_SHARED_SECRET: "test-secret",
+    });
+    const response = await handleHttp(new Request("https://example.test/readyz"), env as never);
+    const body = await response.json() as any;
+    expect(response.status).toBe(200);
+    expect(body.warnings).toEqual([
+      "PROJECTS_JSON contains no enabled projects; polling and reconciliation are disabled, but configured direct event sources remain available",
+    ]);
+  });
+
   it("fails readiness for malformed project configuration", async () => {
     const { env } = createTestEnv({
       GENERIC_WEBHOOK_URL: "https://hooks.example.test/deploy",

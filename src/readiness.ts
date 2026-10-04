@@ -39,7 +39,7 @@ export function getReadiness(env: Env): ReadinessReport {
     warnings.push("CI ingestion and /v1/test are disabled because INGEST_SHARED_SECRET is not configured");
   }
   if (projects.length === 0) {
-    warnings.push("PROJECTS_JSON contains no enabled projects; only direct CI ingestion can emit deployment events");
+    warnings.push("PROJECTS_JSON contains no enabled projects; polling and reconciliation are disabled, but configured direct event sources remain available");
   }
 
   return {
@@ -55,4 +55,3 @@ export function getReadiness(env: Env): ReadinessReport {
     warnings,
   };
 }
-

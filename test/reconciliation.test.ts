@@ -68,15 +68,15 @@ describe("Cloudflare API reconciliation", () => {
 
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
-        result: [{ id: "deploy-1", created_on: "2026-10-04T00:00:00Z" }],
+        result: { deployments: [{ id: "deploy-1", created_on: "2026-10-04T00:00:00Z" }] },
       }), { status: 200, headers: { "content-type": "application/json" } }))
       .mockResolvedValueOnce(new Response(JSON.stringify({
-        result: [{
+        result: { deployments: [{
           id: "deploy-2",
           created_on: "2026-10-04T00:05:00Z",
           author_email: "dev@example.test",
           annotations: { "workers/message": "release" },
-        }],
+        }] },
       }), { status: 200, headers: { "content-type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);
 

@@ -25,8 +25,8 @@ async function reconcileWorker(env: Env, project: ProjectConfig): Promise<void> 
   const url = `${API}/accounts/${encodeURIComponent(env.CLOUDFLARE_ACCOUNT_ID!)}/workers/scripts/${encodeURIComponent(project.name)}/deployments`;
   const response = await fetch(url, { headers: { authorization: `Bearer ${env.CLOUDFLARE_API_TOKEN}` } });
   if (!response.ok) throw new Error(`Cloudflare Workers API ${response.status}: ${await response.text()}`);
-  const body = (await response.json()) as { result?: WorkersDeployment[] };
-  const latest = body.result?.[0];
+  const body = (await response.json()) as { result?: { deployments?: WorkersDeployment[] } };
+  const latest = body.result?.deployments?.[0];
   if (!latest?.id) return;
 
   const key = `workers:last:${project.name}`;

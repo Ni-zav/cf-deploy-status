@@ -31,5 +31,6 @@ jobs:
             echo "Lockfile already current"
           else
             git commit -m "build: add reproducible package lock"
+            git pull --rebase origin release/v1-hardening
             git push origin HEAD:release/v1-hardening
           fi

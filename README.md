@@ -289,6 +289,8 @@ Use a custom, account-scoped, read-only API token. Enable only what you use:
 
 Do not use the Global API Key.
 
+Deployment uses a separate token from the runtime read-only monitoring token. Creating a new Worker requires Workers product-level Admin; deploying an existing Worker requires Editor access to that Worker. Keep KV Storage and Queues provisioning permissions on the deployment token when deployment creates those resources. See [Cloudflare's Workers roles and permissions](https://developers.cloudflare.com/workers/authorization/workers/).
+
 ## Configuration
 
 | Variable | Default | Meaning |

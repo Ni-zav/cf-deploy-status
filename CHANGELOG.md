@@ -25,6 +25,7 @@ The project follows Semantic Versioning for both the deployed Worker contract an
 
 ### Fixed
 
+- Dogfood readiness verification now retries transient HTTP failures while newly configured runtime secrets propagate.
 - Empty-project readiness warnings now distinguish disabled polling from direct event sources, including subscribed Workers Builds.
 - Deployment and dogfood configuration preparation now accept JSONC comments and trailing commas while rejecting malformed input before deployment.
 - The installation deploy command now derives an isolated DLQ when the Deploy-to-Cloudflare form renames the main Queue but retains the template's default DLQ name.

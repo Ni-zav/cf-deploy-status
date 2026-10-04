@@ -1,0 +1,28 @@
+name: Generate v1 lockfile
+
+on:
+  push:
+    branches: [release/v1-hardening]
+    paths:
+      - package.json
+      - .github/workflows/v1-lockfile.yml
+
+permissions:
+  contents: read
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Generate package-lock.json
+        run: npm install --package-lock-only --legacy-peer-deps
+      - name: Upload lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-lock
+          path: package-lock.json
+          retention-days: 1

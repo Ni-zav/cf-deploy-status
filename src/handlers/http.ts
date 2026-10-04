@@ -1,6 +1,6 @@
 import { getReadiness } from "../readiness";
 import { normalizeCiPayload } from "../sources/ci";
-import { normalizePagesWebhook } from "../sources/pages-webhook";
+import { isPagesWebhookTest, normalizePagesWebhook } from "../sources/pages-webhook";
 import type { CiPayload, Env, NormalizedQueueMessage, PagesWebhookPayload } from "../types";
 import { json, parseJsonBody, readBearer, timingSafeEqual } from "../utils";
 
@@ -46,6 +46,7 @@ export async function handleHttp(request: Request, env: Env): Promise<Response> 
     if (!timingSafeEqual(request.headers.get("cf-webhook-auth"), env.PAGES_WEBHOOK_SECRET)) return json({ ok: false, error: "unauthorized" }, 401);
     try {
       const payload = await parseJsonBody<PagesWebhookPayload>(request);
+      if (isPagesWebhookTest(payload)) return json({ ok: true, test: true });
       const event = normalizePagesWebhook(payload, env);
       await enqueue(env, event);
       return json({ ok: true, eventId: event.eventId }, 202);

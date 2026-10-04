@@ -2,6 +2,11 @@ import { findProject, resolveEnvironment } from "../config";
 import type { DeploymentEvent, Env, PagesWebhookPayload } from "../types";
 import { normalizeStatus } from "../utils";
 
+export function isPagesWebhookTest(payload: PagesWebhookPayload): boolean {
+  return Object.keys(payload).length === 1 && typeof payload.text === "string" &&
+    /^Hello World! This is a test message sent from https:\/\/cloudflare\.com\. If you can see this, your webhook is configured (correctly|properly)\.$/.test(payload.text);
+}
+
 function stringValue(data: Record<string, unknown> | undefined, ...keys: string[]): string | undefined {
   for (const key of keys) {
     const value = data?.[key];

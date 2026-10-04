@@ -25,6 +25,7 @@ The project follows Semantic Versioning for both the deployed Worker contract an
 
 ### Fixed
 
+- Native Pages webhook setup now acknowledges authenticated Cloudflare destination-validation messages without emitting a deployment event.
 - Workers Builds failure events with Cloudflare's `cancelled` outcome now remain canceled notifications instead of being mislabeled as failures.
 - Token documentation now distinguishes account-owned monitoring tokens from the user-owned tokens required by the optional Workers Builds REST enrichment API.
 - Dogfood readiness verification now retries transient HTTP failures while newly configured runtime secrets propagate.

@@ -3,6 +3,51 @@ import { handleHttp } from "../src/handlers/http";
 import { createTestEnv } from "./helpers";
 
 describe("HTTP handlers", () => {
+  const pagesTestText = "Hello World! This is a test message sent from https://cloudflare.com. If you can see this, your webhook is configured correctly.";
+
+  it("acknowledges Cloudflare destination validation without enqueuing a deployment", async () => {
+    const { env, send } = createTestEnv({ PAGES_WEBHOOK_SECRET: "pages-secret" });
+    for (const text of [pagesTestText, pagesTestText.replace("correctly", "properly")]) {
+      const response = await handleHttp(new Request("https://example.test/v1/events/cloudflare/pages", {
+        method: "POST",
+        headers: { "cf-webhook-auth": "pages-secret", "content-type": "application/json" },
+        body: JSON.stringify({ text }),
+      }), env as never);
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ ok: true, test: true });
+    }
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("authenticates validation requests and rejects unrelated webhook payloads", async () => {
+    const { env, send } = createTestEnv({ PAGES_WEBHOOK_SECRET: "pages-secret" });
+    for (const [secret, payload, status] of [
+      ["wrong", { text: pagesTestText }, 401],
+      ["pages-secret", { text: "unrecognized validation request" }, 400],
+      ["pages-secret", { text: pagesTestText, alert_type: "unrelated_alert" }, 400],
+    ] as const) {
+      const response = await handleHttp(new Request("https://example.test/v1/events/cloudflare/pages", {
+        method: "POST", headers: { "cf-webhook-auth": secret, "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      }), env as never);
+      expect(response.status).toBe(status);
+    }
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("continues to enqueue real authenticated Pages deployment alerts", async () => {
+    const { env, send } = createTestEnv({ PAGES_WEBHOOK_SECRET: "pages-secret" });
+    const response = await handleHttp(new Request("https://example.test/v1/events/cloudflare/pages", {
+      method: "POST", headers: { "cf-webhook-auth": "pages-secret", "content-type": "application/json" },
+      body: JSON.stringify({ alert_type: "pages_event_alert", alert_event: "deployment_success", data: {
+        project_name: "site", deployment_id: "preview-id", environment: "preview", branch: "test-preview",
+      } }),
+    }), env as never);
+    expect(response.status).toBe(202);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect((send.mock.calls[0]![0] as any).event.eventId).toBe("pages:preview-id:succeeded");
+  });
+
   it("keeps liveness independent from configuration", async () => {
     const { env } = createTestEnv();
     const response = await handleHttp(new Request("https://example.test/healthz"), env as never);

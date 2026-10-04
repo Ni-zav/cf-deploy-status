@@ -1,5 +1,5 @@
 import { configuredDestinations } from "./destinations";
-import { getProjects, parseProjectsJson } from "./config";
+import { parseProjectsJson } from "./config";
 import type { Env } from "./types";
 
 export type ReadinessReport = {
@@ -56,12 +56,3 @@ export function getReadiness(env: Env): ReadinessReport {
   };
 }
 
-export function assertDeliveryConfigured(env: Env): void {
-  if (configuredDestinations(env).length === 0) {
-    throw new Error("no notification destinations configured");
-  }
-
-  // Force config parsing here so malformed project config is visible before events
-  // are acknowledged as successfully processed.
-  getProjects(env);
-}

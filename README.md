@@ -83,7 +83,7 @@ Edit `PROJECTS_JSON` in `wrangler.jsonc`. Example:
 [
   {
     "product": "pages",
-    "name": "sveindonesia",
+    "name": "example-site",
     "branchEnvironmentMap": {
       "main": "production",
       "staging": "staging"
@@ -92,7 +92,7 @@ Edit `PROJECTS_JSON` in `wrangler.jsonc`. Example:
   },
   {
     "product": "workers",
-    "name": "neos-api",
+    "name": "example-api",
     "branchEnvironmentMap": {
       "main": "production",
       "staging": "staging"
@@ -144,7 +144,7 @@ The Wrangler config intentionally omits the KV namespace ID. Current Wrangler su
 After the Worker/Queue exists, subscribe each Workers Builds project you want to observe:
 
 ```bash
-npm run subscribe:workers -- neos-api another-worker
+npm run subscribe:workers -- example-api another-worker
 ```
 
 Equivalent Wrangler command:
@@ -153,8 +153,8 @@ Equivalent Wrangler command:
 npx wrangler queues subscription create cf-deploy-events \
   --source workersBuilds.worker \
   --events build.started,build.succeeded,build.failed,build.canceled \
-  --worker-name neos-api \
-  --name cf-deploy-status-neos-api
+  --worker-name example-api \
+  --name cf-deploy-status-example-api
 ```
 
 Native Workers Builds events are enriched with build URLs or a short failure excerpt when the API token has the required read permissions.
@@ -210,7 +210,7 @@ This repo is itself a composite GitHub Action:
     endpoint: ${{ secrets.CF_DEPLOY_STATUS_URL }}
     token: ${{ secrets.CF_DEPLOY_STATUS_TOKEN }}
     product: workers
-    project: neos-api
+    project: example-api
     environment: staging
     status: ${{ steps.deploy.outcome == 'success' && 'succeeded' || 'failed' }}
     deployment-url: ${{ steps.deploy.outputs.deployment-url }}

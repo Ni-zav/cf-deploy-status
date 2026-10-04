@@ -1,7 +1,7 @@
 [
   {
     "product": "pages",
-    "name": "sveindonesia",
+    "name": "example-site",
     "branchEnvironmentMap": {
       "main": "production",
       "staging": "staging"
@@ -10,7 +10,7 @@
   },
   {
     "product": "workers",
-    "name": "neos-api",
+    "name": "example-api",
     "branchEnvironmentMap": {
       "main": "production",
       "staging": "staging"

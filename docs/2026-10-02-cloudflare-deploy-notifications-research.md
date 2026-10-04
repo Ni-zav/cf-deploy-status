@@ -645,7 +645,7 @@ Success:
 
 ```text
 ✅ DEPLOY SUCCEEDED
-sveindonesia.com · Pages · production
+example.com · Pages · production
 branch: main
 commit: 75c54fa
 duration: 1m 42s
@@ -656,7 +656,7 @@ Failure:
 
 ```text
 ❌ DEPLOY FAILED
-neos-api · Workers · staging
+example-api · Workers · staging
 branch: staging
 commit: 9b13e2a
 error: npm run build exited with code 1
@@ -680,7 +680,7 @@ Example concept:
   "projects": [
     {
       "product": "pages",
-      "name": "sveindonesia",
+      "name": "example-site",
       "enabled": true,
       "branchEnvironmentMap": {
         "main": "production",
@@ -689,7 +689,7 @@ Example concept:
     },
     {
       "product": "workers",
-      "name": "svein-api",
+      "name": "example-api",
       "enabled": true,
       "branchEnvironmentMap": {
         "main": "production",

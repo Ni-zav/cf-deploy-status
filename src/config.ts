@@ -1,15 +1,36 @@
 import type { Env, ProjectConfig } from "./types";
 
-export function getProjects(env: Env): ProjectConfig[] {
-  if (!env.PROJECTS_JSON?.trim()) return [];
+export type ParsedProjects = {
+  projects: ProjectConfig[];
+  error?: string;
+};
+
+export function parseProjectsJson(value: string | undefined): ParsedProjects {
+  if (!value?.trim()) return { projects: [] };
   try {
-    const parsed: unknown = JSON.parse(env.PROJECTS_JSON);
-    if (!Array.isArray(parsed)) throw new Error("PROJECTS_JSON must be an array");
-    return parsed.filter(isProjectConfig).filter((project) => project.enabled !== false);
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed)) return { projects: [], error: "PROJECTS_JSON must be an array" };
+
+    const projects: ProjectConfig[] = [];
+    for (const item of parsed) {
+      if (!isProjectConfig(item)) {
+        return { projects: [], error: "PROJECTS_JSON contains an invalid project entry" };
+      }
+      if (item.enabled !== false) projects.push(item);
+    }
+    return { projects };
   } catch (error) {
-    console.error("Invalid PROJECTS_JSON", error);
-    return [];
+    return {
+      projects: [],
+      error: `PROJECTS_JSON is invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
+}
+
+export function getProjects(env: Env): ProjectConfig[] {
+  const parsed = parseProjectsJson(env.PROJECTS_JSON);
+  if (parsed.error) console.error("Invalid PROJECTS_JSON", parsed.error);
+  return parsed.projects;
 }
 
 function isProjectConfig(value: unknown): value is ProjectConfig {

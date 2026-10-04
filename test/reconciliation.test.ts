@@ -8,6 +8,34 @@ afterEach(() => {
 });
 
 describe("Cloudflare API reconciliation", () => {
+  it.each(["pages", "workers"] as const)("emits only the latest %s deployment on explicit bootstrap opt-in", async (product) => {
+    const { env, send } = createTestEnv({
+      CLOUDFLARE_ACCOUNT_ID: "account-1",
+      CLOUDFLARE_API_TOKEN: "token-1",
+      NOTIFY_ON_BOOTSTRAP: "true",
+      PROJECTS_JSON: JSON.stringify([{ product, name: "site", reconcile: true }]),
+    });
+    const deployments = product === "pages"
+      ? ["latest", "older"].map(id => ({ id, project_name: "site", latest_stage: { status: "success" } }))
+      : ["latest", "older"].map(id => ({ id }));
+    const body = { result: product === "pages" ? deployments : { deployments } };
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })));
+
+    const poll = product === "pages" ? pollPages : reconcileWorkers;
+    await poll(env as never);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send.mock.calls[0]![0]).toMatchObject({
+      kind: "deployment-event",
+      event: { product, deploymentId: "latest", status: "succeeded" },
+    });
+
+    await poll(env as never);
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
   it("seeds Pages state without replaying old deployments, then emits a state change", async () => {
     const { env, send, kv } = createTestEnv({
       CLOUDFLARE_ACCOUNT_ID: "account-1",

@@ -6,6 +6,8 @@ The project follows Semantic Versioning for both the deployed Worker contract an
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-05
+
 ### Added
 
 - Separate `/healthz` liveness and `/readyz` configuration readiness endpoints.
@@ -46,7 +48,3 @@ The project follows Semantic Versioning for both the deployed Worker contract an
 - Queue delivery is explicitly documented as at-least-once.
 - KV-backed deduplication is explicitly documented as best-effort because Workers KV is eventually consistent.
 - Generic webhook consumers are encouraged to use `event.eventId` as their own idempotency key.
-
-## [1.0.0]
-
-Reserved for the first release that completes the real Cloudflare dogfood matrix in `docs/RELEASE.md`.

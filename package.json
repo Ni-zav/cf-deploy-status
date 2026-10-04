@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run typecheck && npm test",
-    "subscribe:workers": "node scripts/subscribe-workers-builds.mjs"
+    "subscribe:workers": "node scripts/subscribe-workers-builds.mjs",
+    "telegram:chat-info": "node scripts/telegram-chat-info.mjs"
   },
   "devDependencies": {
     "jsonc-parser": "3.3.1",
@@ -37,13 +38,22 @@
         "description": "Optional secret shared with a Cloudflare Pages generic webhook notification."
       },
       "DISCORD_WEBHOOK_URL": {
-        "description": "Optional Discord incoming webhook URL. Configure at least one Discord, Slack, or generic destination."
+        "description": "Optional Discord incoming webhook URL. Configure at least one Discord, Slack, Telegram, or generic destination."
       },
       "SLACK_WEBHOOK_URL": {
-        "description": "Optional Slack incoming webhook URL. Configure at least one Discord, Slack, or generic destination."
+        "description": "Optional Slack incoming webhook URL. Configure at least one Discord, Slack, Telegram, or generic destination."
+      },
+      "TELEGRAM_BOT_TOKEN": {
+        "description": "Optional Telegram BotFather token. Configure with TELEGRAM_CHAT_ID as Worker secrets after deployment."
+      },
+      "TELEGRAM_CHAT_ID": {
+        "description": "Telegram destination chat ID or @username. Required when TELEGRAM_BOT_TOKEN is configured."
+      },
+      "TELEGRAM_MESSAGE_THREAD_ID": {
+        "description": "Optional positive Telegram forum topic ID. Leave unset to use the chat's default destination."
       },
       "GENERIC_WEBHOOK_URL": {
-        "description": "Optional generic JSON webhook destination. Configure at least one Discord, Slack, or generic destination."
+        "description": "Optional generic JSON webhook destination. Configure at least one Discord, Slack, Telegram, or generic destination."
       },
       "GENERIC_WEBHOOK_SECRET": {
         "description": "Optional bearer token attached to generic webhook deliveries."

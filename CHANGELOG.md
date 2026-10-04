@@ -6,6 +6,12 @@ The project follows Semantic Versioning for both the deployed Worker contract an
 
 ## [Unreleased]
 
+### Added
+
+- Native Telegram destination with bot token, chat ID, optional forum topic ID, bounded plain-text messages, and per-destination retry receipts.
+- Telegram readiness validation, token-safe delivery errors, and bot-token redaction in build summaries.
+- Chat/topic discovery helper, Telegram setup instructions, and AI-assisted installation guidance in `AGENTS.md` and `docs/AI_SETUP.md`.
+
 ## [1.0.0] - 2026-10-05
 
 ### Added

@@ -1,6 +1,7 @@
 import type { DeploymentEvent, Env } from "../types";
 import { isDelivered, markDelivered } from "../state/kv";
 import { formatPlainText, statusColor } from "./format";
+import { sendTelegram, telegramConfigurationIssues } from "./telegram";
 
 export type Destination = {
   id: string;
@@ -44,6 +45,10 @@ export function configuredDestinations(env: Env): Destination[] {
     });
   }
 
+  if (env.TELEGRAM_BOT_TOKEN?.trim() && env.TELEGRAM_CHAT_ID?.trim() && telegramConfigurationIssues(env).length === 0) {
+    destinations.push({ id: "telegram", send: async (event) => sendTelegram(env, event) });
+  }
+
   if (env.GENERIC_WEBHOOK_URL) {
     destinations.push({
       id: "generic",
@@ -64,6 +69,8 @@ export function configuredDestinations(env: Env): Destination[] {
 }
 
 export async function dispatchEvent(env: Env, event: DeploymentEvent): Promise<void> {
+  const telegramIssues = telegramConfigurationIssues(env);
+  if (telegramIssues.length > 0) throw new Error(telegramIssues.join("; "));
   const destinations = configuredDestinations(env);
   if (destinations.length === 0) {
     throw new Error("no notification destinations configured");

@@ -1,4 +1,5 @@
 import { configuredDestinations } from "./destinations";
+import { telegramConfigurationIssues } from "./destinations/telegram";
 import { parseProjectsJson } from "./config";
 import type { Env } from "./types";
 
@@ -26,6 +27,7 @@ export function getReadiness(env: Env): ReadinessReport {
   if (!env.EVENTS) issues.push("EVENTS Queue binding is unavailable");
   if (destinations.length === 0) issues.push("no notification destination is configured");
   if (parsed.error) issues.push(parsed.error);
+  issues.push(...telegramConfigurationIssues(env));
 
   const needsCloudflareApi = projects.some(
     (project) => project.product === "pages" || (project.product === "workers" && project.reconcile === true),

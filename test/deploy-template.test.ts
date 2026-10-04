@@ -15,7 +15,7 @@ describe("Deploy-to-Cloudflare setup declarations", () => {
   });
 
   it("keeps optional secret examples commented out for local configuration", () => {
-    for (const name of ["DISCORD_WEBHOOK_URL", "SLACK_WEBHOOK_URL", "GENERIC_WEBHOOK_URL", "GENERIC_WEBHOOK_SECRET", "PAGES_WEBHOOK_SECRET"]) {
+    for (const name of ["DISCORD_WEBHOOK_URL", "SLACK_WEBHOOK_URL", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "TELEGRAM_MESSAGE_THREAD_ID", "GENERIC_WEBHOOK_URL", "GENERIC_WEBHOOK_SECRET", "PAGES_WEBHOOK_SECRET"]) {
       expect(example).toMatch(new RegExp(`^# ${name}=`, "m"));
       expect(secretInputs).not.toContain(name);
     }

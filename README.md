@@ -13,7 +13,7 @@ It runs as a Cloudflare Worker and combines native Workers Builds events, Pages 
 - Pages: started / succeeded / failed / canceled / skipped
 - production, staging, preview, or custom branch-to-environment mapping
 - direct GitHub Actions / Wrangler reporting, including failures that occur before Cloudflare creates a deployment
-- Discord, Slack, and generic JSON webhook destinations
+- Discord, Slack, Telegram (including forum topics), and generic JSON webhook destinations
 - KV idempotency and per-destination delivery receipts
 - Queue retries and a dead-letter queue
 - failed Workers Build log extraction
@@ -36,7 +36,7 @@ GitHub Actions / Wrangler ────────►       │
                                          │
                           ┌──────────────┬─┴──────────────┐
                           ▼              ▼                ▼
-                         KV          Discord/Slack   generic webhook
+                         KV       Discord/Slack/Telegram   generic webhook
                    dedupe + state
 ```
 
@@ -51,7 +51,7 @@ Use the **Deploy to Cloudflare** button above. Cloudflare clones the repository 
 1. Choose a new Worker name and new resources for a separate installation.
 2. Enter `CLOUDFLARE_ACCOUNT_ID` once as an ordinary variable. Leave `PROJECTS_JSON` as `[]` until you configure monitored projects.
 3. Enter the read-only monitoring token as `CLOUDFLARE_API_TOKEN` and a random bearer token as `INGEST_SHARED_SECRET`. The build/deployment token is separate from this runtime read-only token.
-4. Deploy, then open the new Worker in the Cloudflare dashboard. Under **Settings > Variables and Secrets**, add a secret for at least one destination: `DISCORD_WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, or `GENERIC_WEBHOOK_URL`. Save and deploy the secret change.
+4. Deploy, then open the new Worker in the Cloudflare dashboard. Under **Settings > Variables and Secrets**, configure at least one destination: `DISCORD_WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `GENERIC_WEBHOOK_URL`, or both `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Save and deploy the secret change.
 5. Add `PAGES_WEBHOOK_SECRET` only if configuring native Pages webhooks, and `GENERIC_WEBHOOK_SECRET` only if your generic destination requires a bearer token. Leave unused destination secrets unset.
 
 Cloudflare discovers setup secrets from active entries in `.dev.vars.example`. Optional entries are commented out so the form does not require every destination. Ordinary variables are declared only in `wrangler.jsonc` to avoid duplicate masked fields.
@@ -124,6 +124,10 @@ npx wrangler secret put INGEST_SHARED_SECRET
 # one or more destinations
 npx wrangler secret put DISCORD_WEBHOOK_URL
 npx wrangler secret put SLACK_WEBHOOK_URL
+npx wrangler secret put TELEGRAM_BOT_TOKEN
+npx wrangler secret put TELEGRAM_CHAT_ID
+# optional Telegram forum topic
+npx wrangler secret put TELEGRAM_MESSAGE_THREAD_ID
 npx wrangler secret put GENERIC_WEBHOOK_URL
 npx wrangler secret put GENERIC_WEBHOOK_SECRET
 
@@ -188,6 +192,32 @@ Set the same secret in Cloudflare's generic webhook configuration and `PAGES_WEB
 Cloudflare's destination-validation test is acknowledged without sending a deployment notification. Native Pages alerts provide a deployment URL and provider environment, but the observed payload does not include a branch name. Use Pages API polling when branch-to-environment mapping is required.
 
 The API poller can remain enabled as reconciliation; matching deployment/status IDs deduplicate naturally.
+
+## Telegram destination
+
+Telegram is available in the current source tree; the original `v1.0.0` Worker release does not include it. Upgrade the Worker source before configuring these settings. The GitHub reporting Action does not need Telegram credentials.
+
+1. Open the verified [@BotFather](https://t.me/BotFather) in Telegram, send `/newbot`, and follow its prompts. Keep the bot token private. Prefer a dedicated notification bot.
+2. For private messages, open your new bot and press **Start**. For a group, add the bot and allow it to send messages; send `/setup@YourBotUsername` in the destination group or topic. For a channel, add the bot as an administrator with permission to post.
+3. Obtain the destination IDs using the helper below. It prints only chat IDs, chat types, and optional topic IDs, not message text or the token. It does not remove existing bot webhooks or advance the update offset. If another integration uses the bot, use a dedicated bot instead.
+
+   ```bash
+   read -rsp "Telegram bot token: " TELEGRAM_BOT_TOKEN
+   echo
+   export TELEGRAM_BOT_TOKEN
+   npm run telegram:chat-info
+   unset TELEGRAM_BOT_TOKEN
+   ```
+
+4. Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` as Worker secrets. Preserve a negative group/chat ID exactly; a public `@username` is also supported. Do not use the bot's own ID as the destination chat ID.
+5. To send into a forum topic, also set `TELEGRAM_MESSAGE_THREAD_ID` to the helper's positive `topicId`. Leave it unset for ordinary chats or the default destination. This is a topic ID, not the topic's name.
+6. Save/deploy the settings, check `/readyz`, then send an authenticated event to `/v1/test` using `INGEST_SHARED_SECRET`. Confirm the notification arrives in the intended chat/topic. Readiness validates local configuration, not Telegram permissions or delivery.
+
+Messages are plain text, capped at 4096 characters, and use Telegram's [sendMessage API](https://core.telegram.org/bots/api#sendmessage). API/transport failures use the existing Queue retry and DLQ path. Discord, Slack, Telegram, and generic destinations each have their own best-effort KV receipt, so a Telegram retry skips destinations that already succeeded.
+
+## AI-assisted installation
+
+The repository includes [AGENTS.md](AGENTS.md) for coding agents and an [AI setup checklist](docs/AI_SETUP.md) with a reusable installation prompt. An MCP server is not required. Give your assistant repository access, but enter credentials yourself through Worker secrets or hidden terminal prompts. Never paste tokens into a public issue, commit, or AI prompt.
 
 ## Direct Wrangler / GitHub Actions
 
@@ -269,7 +299,7 @@ curl -X POST "https://<worker>/v1/test" \
 Queue processing uses deterministic event IDs plus two layers of KV state:
 
 - `processed:<eventId>` prevents a completed event from being processed twice.
-- `delivered:<eventId>:<destination>` prevents a successful Discord/Slack/generic delivery from being repeated when another destination fails and the Queue retries the message.
+- `delivered:<eventId>:<destination>` prevents a successful Discord/Slack/Telegram/generic delivery from being repeated when another destination fails and the Queue retries the message.
 
 Transient delivery errors are retried by the Queue. Messages that exhaust the configured retries are routed to `cf-deploy-events-dlq`. An installation with zero configured destinations is treated as a delivery failure, so the Queue retries and eventually sends the event to the DLQ instead of acknowledging it as processed.
 
@@ -305,6 +335,9 @@ Deployment uses a separate token from the runtime read-only monitoring token. Cr
 | `NOTIFY_ON_BOOTSTRAP` | `false` | notify latest state on first poll |
 | `ERROR_SUMMARY_MAX_CHARS` | `1200` | max error excerpt |
 | `STATE_TTL_SECONDS` | `2592000` | KV idempotency/state TTL |
+| `TELEGRAM_BOT_TOKEN` | unset | secret from BotFather; requires chat ID |
+| `TELEGRAM_CHAT_ID` | unset | destination numeric ID or public `@username` |
+| `TELEGRAM_MESSAGE_THREAD_ID` | unset | optional positive forum topic ID |
 
 Local secret/value examples are in `.dev.vars.example`.
 
@@ -325,7 +358,7 @@ CI uses the committed lockfile, runs TypeScript + Vitest, validates the Wrangler
 src/
   handlers/       HTTP, Queue, scheduled handlers
   sources/        Workers Builds, Pages API/webhook, Workers API, CI
-  destinations/   Discord, Slack, generic webhook
+  destinations/   Discord, Slack, Telegram, generic webhook
   state/          KV idempotency/state
 scripts/          setup + CI reporting helpers
 examples/         project config + GitHub Actions example

@@ -7,10 +7,13 @@ Never commit:
 - Cloudflare API tokens
 - `INGEST_SHARED_SECRET`
 - Discord/Slack webhook URLs
+- Telegram bot tokens, private chat IDs, and topic IDs
 - generic webhook credentials
 - `.dev.vars`
 
 Store production values with `wrangler secret put` or Cloudflare dashboard secrets.
+
+Telegram embeds its bot token in API request URLs. Do not log these URLs or use token-bearing API URLs in browser screenshots. Telegram delivery errors omit request URLs and provider descriptions; captured error summaries redact recognized Telegram token assignments and Bot API URLs. Do not rely on redaction to make arbitrary logs safe.
 
 ## API token scope
 

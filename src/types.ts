@@ -181,6 +181,9 @@ export type Env = {
   PAGES_WEBHOOK_SECRET?: string;
   DISCORD_WEBHOOK_URL?: string;
   SLACK_WEBHOOK_URL?: string;
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_CHAT_ID?: string;
+  TELEGRAM_MESSAGE_THREAD_ID?: string;
   GENERIC_WEBHOOK_URL?: string;
   GENERIC_WEBHOOK_SECRET?: string;
   PROJECTS_JSON?: string;

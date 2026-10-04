@@ -62,6 +62,8 @@ For Pages polling, Workers reconciliation, or Workers Builds enrichment, also co
 
 Optional destination secrets:
 
+- `CF_DEPLOY_STATUS_TELEGRAM_BOT_TOKEN` and `CF_DEPLOY_STATUS_TELEGRAM_CHAT_ID` together can replace the webhook destination requirement for Telegram-only dogfooding.
+- `CF_DEPLOY_STATUS_TELEGRAM_MESSAGE_THREAD_ID` selects an optional Telegram forum topic.
 - `CF_DEPLOY_STATUS_GENERIC_WEBHOOK_SECRET`
 - `CF_DEPLOY_STATUS_PAGES_WEBHOOK_SECRET`
 

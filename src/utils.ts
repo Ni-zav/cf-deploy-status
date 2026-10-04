@@ -33,6 +33,8 @@ export function sanitizeErrorSummary(value: string | undefined, env: Env): strin
     .replace(/(authorization:\s*bearer\s+)[^\s]+/gi, "$1[REDACTED]")
     .replace(/(CLOUDFLARE_API_TOKEN\s*[=:]\s*)[^\s]+/gi, "$1[REDACTED]")
     .replace(/(API[_-]?TOKEN\s*[=:]\s*)[^\s]+/gi, "$1[REDACTED]")
+    .replace(/(TELEGRAM_BOT_TOKEN\s*[=:]\s*)[^\s]+/gi, "$1[REDACTED]")
+    .replace(/https:\/\/api\.telegram\.org\/bot[^\s/]+/gi, "https://api.telegram.org/bot[REDACTED]")
     .replace(/https:\/\/discord(?:app)?\.com\/api\/webhooks\/[^\s]+/gi, "[REDACTED_DISCORD_WEBHOOK]")
     .replace(/https:\/\/hooks\.slack\.com\/services\/[^\s]+/gi, "[REDACTED_SLACK_WEBHOOK]")
     .trim();

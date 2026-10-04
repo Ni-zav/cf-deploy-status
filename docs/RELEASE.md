@@ -104,6 +104,8 @@ Optional comma- or space-separated Worker names. The dogfood workflow creates an
 `CF_DEPLOY_STATUS_WORKER_NAME`
 
 Optional Worker name for the dogfood notifier. Defaults to `cf-deploy-status`.
+A custom name uses its own `<name>-events` Queue and `<name>-events-dlq` so
+temporary certification deployments do not replace the existing queue consumer.
 
 ## Real-event evidence
 

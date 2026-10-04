@@ -48,14 +48,7 @@ jobs:
       - name: Build dogfood Wrangler configuration
         shell: bash
         run: |
-          node --input-type=module <<'NODE'
-          import fs from "node:fs";
-          const config = JSON.parse(fs.readFileSync("wrangler.jsonc", "utf8"));
-          config.name = process.env.DOGFOOD_WORKER_NAME;
-          config.vars.CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
-          config.vars.PROJECTS_JSON = process.env.DOGFOOD_PROJECTS_JSON || "[]";
-          fs.writeFileSync("wrangler.dogfood.json", JSON.stringify(config, null, 2) + "\n");
-          NODE
+          node scripts/dogfood-config.mjs
 
       - name: Deploy dogfood Worker
         id: deploy
@@ -92,7 +85,8 @@ jobs:
         run: |
           normalized="${DOGFOOD_WORKERS_BUILD_PROJECTS//,/ }"
           read -r -a workers <<< "$normalized"
-          WRANGLER_CONFIG=wrangler.dogfood.json npm run subscribe:workers -- "${workers[@]}"
+          queue="$(node -e 'const c = require("./wrangler.dogfood.json"); console.log(c.queues.producers.find(p => p.binding === "EVENTS").queue)')"
+          CF_DEPLOY_QUEUE="$queue" WRANGLER_CONFIG=wrangler.dogfood.json npm run subscribe:workers -- "${workers[@]}"
 
       - name: Verify readiness
         env:
@@ -114,6 +108,7 @@ jobs:
           done
 
       - name: Report the real dogfood deployment through cf-deploy-status
+        id: report_deployment
         uses: ./
         with:
           endpoint: ${{ steps.deploy.outputs.deployment-url }}
@@ -125,3 +120,29 @@ jobs:
           deployment-url: ${{ steps.deploy.outputs.deployment-url }}
           commit-sha: ${{ github.sha }}
           source: github-actions
+
+      - name: Verify the real deployment report was accepted
+        env:
+          REPORTED: ${{ steps.report_deployment.outputs.reported }}
+        run: test "$REPORTED" = true
+
+      - name: Exercise a reporting outage without masking deployment success
+        id: report_outage
+        uses: ./
+        with:
+          endpoint: ${{ steps.deploy.outputs.deployment-url }}/certification-unavailable
+          token: ${{ secrets.CF_DEPLOY_STATUS_TOKEN }}
+          product: workers
+          project: ${{ env.DOGFOOD_WORKER_NAME }}
+          status: succeeded
+          fail-on-error: "false"
+
+      - name: Verify reporting failure preserved deployment success
+        env:
+          REPORTED: ${{ steps.report_outage.outputs.reported }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+          REPORT_OUTCOME: ${{ steps.report_outage.outcome }}
+        run: |
+          test "$REPORTED" = false
+          test "$DEPLOY_OUTCOME" = success
+          test "$REPORT_OUTCOME" = success

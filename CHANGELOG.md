@@ -25,6 +25,8 @@ The project follows Semantic Versioning for both the deployed Worker contract an
 
 ### Fixed
 
+- Dogfood deployments with a custom Worker name now isolate their event Queue and DLQ instead of sharing the production notifier's consumer.
+- Generic webhook destinations hosted by another Worker on the same zone now use public fetch routing instead of failing with Cloudflare error 1042.
 - Fixed Workers deployment-history reconciliation to parse Cloudflare's live `result.deployments` response shape; the mismatch was discovered during authenticated dogfood deployment and is covered by a regression test.
 
 - Events are no longer acknowledged as processed when zero notification destinations are configured; they retry and can reach the DLQ instead.

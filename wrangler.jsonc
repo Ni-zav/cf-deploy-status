@@ -3,6 +3,7 @@
   "name": "cf-deploy-status",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["global_fetch_strictly_public"],
   "observability": {
     "enabled": true
   },

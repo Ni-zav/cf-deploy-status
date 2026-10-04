@@ -31,6 +31,20 @@ describe("HTTP handlers", () => {
     );
   });
 
+  it("fails readiness when API-backed monitoring lacks Cloudflare read credentials", async () => {
+    const { env } = createTestEnv({
+      GENERIC_WEBHOOK_URL: "https://hooks.example.test/deploy",
+      PROJECTS_JSON: JSON.stringify([{ product: "pages", name: "site" }]),
+    });
+    const response = await handleHttp(new Request("https://example.test/readyz"), env as never);
+    const body = await response.json() as any;
+    expect(response.status).toBe(503);
+    expect(body.ok).toBe(false);
+    expect(body.issues).toContain(
+      "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are required by the configured polling/reconciliation projects",
+    );
+  });
+
   it("fails readiness for malformed project configuration", async () => {
     const { env } = createTestEnv({
       GENERIC_WEBHOOK_URL: "https://hooks.example.test/deploy",

@@ -46,15 +46,23 @@ Workers deployment-history reconciliation is available as an optional safety net
 
 ### One-click deployment
 
-Use the **Deploy to Cloudflare** button above. Cloudflare clones the repository into your account, provisions the declared KV namespace and Queues, configures Workers Builds, and deploys the Worker. The repository includes binding descriptions and a `.dev.vars.example` so the setup flow can explain the required and optional secrets.
+Use the **Deploy to Cloudflare** button above. Cloudflare clones the repository into your account, provisions the declared KV namespace and Queues, configures Workers Builds, and deploys the Worker.
 
-After deployment, configure at least one notification destination and then check:
+1. Choose a new Worker name and new resources for a separate installation.
+2. Enter `CLOUDFLARE_ACCOUNT_ID` once as an ordinary variable. Leave `PROJECTS_JSON` as `[]` until you configure monitored projects.
+3. Enter the read-only monitoring token as `CLOUDFLARE_API_TOKEN` and a random bearer token as `INGEST_SHARED_SECRET`. The build/deployment token is separate from this runtime read-only token.
+4. Deploy, then open the new Worker in the Cloudflare dashboard. Under **Settings > Variables and Secrets**, add a secret for at least one destination: `DISCORD_WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, or `GENERIC_WEBHOOK_URL`. Save and deploy the secret change.
+5. Add `PAGES_WEBHOOK_SECRET` only if configuring native Pages webhooks, and `GENERIC_WEBHOOK_SECRET` only if your generic destination requires a bearer token. Leave unused destination secrets unset.
+
+Cloudflare discovers setup secrets from active entries in `.dev.vars.example`. Optional entries are commented out so the form does not require every destination. Ordinary variables are declared only in `wrangler.jsonc` to avoid duplicate masked fields.
+
+After configuring a destination, check:
 
 ```text
 GET https://<worker>/readyz
 ```
 
-A healthy installation returns HTTP 200. A misconfigured installation returns HTTP 503 with concrete issues instead of silently dropping deployment events.
+A healthy installation returns HTTP 200. Before adding a destination, HTTP 503 with a missing-destination issue is expected. Configure destinations before sending events; delivery without a destination retries and can reach the DLQ.
 
 ### Manual deployment
 

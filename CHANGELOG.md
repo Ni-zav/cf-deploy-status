@@ -25,6 +25,7 @@ The project follows Semantic Versioning for both the deployed Worker contract an
 
 ### Fixed
 
+- Deploy-to-Cloudflare setup no longer declares optional destinations as mandatory secrets or duplicates ordinary Wrangler variables as masked inputs. Destination secrets are configured after deployment.
 - Dogfood deployments with a custom Worker name now isolate their event Queue and DLQ instead of sharing the production notifier's consumer.
 - Generic webhook destinations hosted by another Worker on the same zone now use public fetch routing instead of failing with Cloudflare error 1042.
 - Fixed Workers deployment-history reconciliation to parse Cloudflare's live `result.deployments` response shape; the mismatch was discovered during authenticated dogfood deployment and is covered by a regression test.

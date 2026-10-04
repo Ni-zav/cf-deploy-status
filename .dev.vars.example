@@ -1,22 +1,17 @@
-# Cloudflare API access used by Pages polling and optional Workers reconciliation.
-CLOUDFLARE_ACCOUNT_ID=your_account_id
+# Active entries become secret inputs in the Deploy-to-Cloudflare form.
+# Ordinary settings, including CLOUDFLARE_ACCOUNT_ID, belong in wrangler.jsonc vars.
 CLOUDFLARE_API_TOKEN=your_read_only_api_token
 
 # Required for POST /v1/events/ci and POST /v1/test.
 INGEST_SHARED_SECRET=replace_me
 
-# Required only if using Cloudflare Pages generic webhook notifications.
-PAGES_WEBHOOK_SECRET=replace_me
+# Optional secrets: uncomment only the features you use in your local .dev.vars.
+# For hosted installations, add these under Worker Settings > Variables and Secrets.
+# Configure at least one destination before checking /readyz or sending events.
+# DISCORD_WEBHOOK_URL=
+# SLACK_WEBHOOK_URL=
+# GENERIC_WEBHOOK_URL=
+# GENERIC_WEBHOOK_SECRET=
 
-# Configure one or more destinations.
-DISCORD_WEBHOOK_URL=
-SLACK_WEBHOOK_URL=
-GENERIC_WEBHOOK_URL=
-GENERIC_WEBHOOK_SECRET=
-
-# Override wrangler vars locally if desired.
-PROJECTS_JSON=[{"product":"pages","name":"example-pages","branchEnvironmentMap":{"main":"production","staging":"staging"}},{"product":"workers","name":"example-worker","environment":"production","reconcile":false}]
-NOTIFY_STARTED=true
-NOTIFY_ON_BOOTSTRAP=false
-ERROR_SUMMARY_MAX_CHARS=1200
-STATE_TTL_SECONDS=2592000
+# Only needed for Cloudflare Pages generic webhook notifications.
+# PAGES_WEBHOOK_SECRET=

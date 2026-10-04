@@ -1,3 +1,4 @@
+import { getReadiness } from "../readiness";
 import { normalizeCiPayload } from "../sources/ci";
 import { normalizePagesWebhook } from "../sources/pages-webhook";
 import type { CiPayload, Env, NormalizedQueueMessage, PagesWebhookPayload } from "../types";
@@ -8,8 +9,23 @@ const VERSION = "1.0.0";
 export async function handleHttp(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
 
-  if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/healthz")) {
+  if (request.method === "GET" && url.pathname === "/") {
+    return json({
+      ok: true,
+      service: "cf-deploy-status",
+      version: VERSION,
+      endpoints: ["/healthz", "/readyz", "/v1/events/ci", "/v1/events/cloudflare/pages", "/v1/test"],
+      now: new Date().toISOString(),
+    });
+  }
+
+  if (request.method === "GET" && url.pathname === "/healthz") {
     return json({ ok: true, service: "cf-deploy-status", version: VERSION, now: new Date().toISOString() });
+  }
+
+  if (request.method === "GET" && url.pathname === "/readyz") {
+    const readiness = getReadiness(env);
+    return json({ ...readiness, service: "cf-deploy-status", version: VERSION, now: new Date().toISOString() }, readiness.ok ? 200 : 503);
   }
 
   if (request.method === "POST" && url.pathname === "/v1/events/ci") {

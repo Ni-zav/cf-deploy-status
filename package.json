@@ -14,12 +14,40 @@
     "subscribe:workers": "node scripts/subscribe-workers-builds.mjs"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.0",
-    "wrangler": "^4.136.3"
+    "typescript": "5.9.3",
+    "vitest": "4.0.0",
+    "wrangler": "4.136.3"
   },
   "engines": {
     "node": ">=22"
+  },
+  "cloudflare": {
+    "bindings": {
+      "CLOUDFLARE_ACCOUNT_ID": {
+        "description": "Cloudflare account ID used for Pages polling and optional Workers reconciliation."
+      },
+      "CLOUDFLARE_API_TOKEN": {
+        "description": "Account-scoped read-only Cloudflare API token. Grant only the read permissions needed by the monitors you enable."
+      },
+      "INGEST_SHARED_SECRET": {
+        "description": "Random bearer token protecting CI ingestion and synthetic test endpoints. Generate a long random value."
+      },
+      "PAGES_WEBHOOK_SECRET": {
+        "description": "Optional secret shared with a Cloudflare Pages generic webhook notification."
+      },
+      "DISCORD_WEBHOOK_URL": {
+        "description": "Optional Discord incoming webhook URL. Configure at least one Discord, Slack, or generic destination."
+      },
+      "SLACK_WEBHOOK_URL": {
+        "description": "Optional Slack incoming webhook URL. Configure at least one Discord, Slack, or generic destination."
+      },
+      "GENERIC_WEBHOOK_URL": {
+        "description": "Optional generic JSON webhook destination. Configure at least one Discord, Slack, or generic destination."
+      },
+      "GENERIC_WEBHOOK_SECRET": {
+        "description": "Optional bearer token attached to generic webhook deliveries."
+      }
+    }
   },
   "license": "MIT"
 }

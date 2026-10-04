@@ -25,6 +25,7 @@ The project follows Semantic Versioning for both the deployed Worker contract an
 
 ### Fixed
 
+- Token documentation now distinguishes account-owned monitoring tokens from the user-owned tokens required by the optional Workers Builds REST enrichment API.
 - Dogfood readiness verification now retries transient HTTP failures while newly configured runtime secrets propagate.
 - Empty-project readiness warnings now distinguish disabled polling from direct event sources, including subscribed Workers Builds.
 - Deployment and dogfood configuration preparation now accept JSONC comments and trailing commas while rejecting malformed input before deployment.

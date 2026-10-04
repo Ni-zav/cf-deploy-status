@@ -285,7 +285,9 @@ Use a custom, account-scoped, read-only API token. Enable only what you use:
 
 - Cloudflare Pages: Read — Pages polling
 - Workers Scripts: Read — Worker reconciliation and workers.dev URL enrichment
-- Workers Builds Configuration: Read — Workers Builds enrichment where required
+- Workers Content Read-Only (legacy Workers CI Read): optional Workers Builds metadata/log access
+
+For optional Workers Builds REST enrichment, create a **user-owned** token under [My Profile → API Tokens](https://dash.cloudflare.com/profile/api-tokens), restricted to the intended account and read permissions. Account-owned tokens can monitor Pages and Workers but are not supported by the Builds API, even when their Workers permissions are sufficient. See the [Builds API authentication requirements](https://developers.cloudflare.com/workers/ci-cd/builds/api-reference/). Queue subscriptions still deliver lifecycle events without Builds REST access; error summaries then use event metadata rather than fetched build logs.
 
 Do not use the Global API Key.
 

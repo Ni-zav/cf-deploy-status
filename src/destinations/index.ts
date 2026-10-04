@@ -66,8 +66,7 @@ export function configuredDestinations(env: Env): Destination[] {
 export async function dispatchEvent(env: Env, event: DeploymentEvent): Promise<void> {
   const destinations = configuredDestinations(env);
   if (destinations.length === 0) {
-    console.warn("No notification destinations configured", { eventId: event.eventId });
-    return;
+    throw new Error("no notification destinations configured");
   }
 
   for (const destination of destinations) {

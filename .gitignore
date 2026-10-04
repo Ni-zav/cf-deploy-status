@@ -1,6 +1,7 @@
 node_modules/
 .wrangler/
 wrangler.dogfood.json
+wrangler.deploy.json
 .dev.vars
 .env
 .env.*

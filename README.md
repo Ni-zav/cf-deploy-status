@@ -56,6 +56,8 @@ Use the **Deploy to Cloudflare** button above. Cloudflare clones the repository 
 
 Cloudflare discovers setup secrets from active entries in `.dev.vars.example`. Optional entries are commented out so the form does not require every destination. Ordinary variables are declared only in `wrangler.jsonc` to avoid duplicate masked fields.
 
+Keep the deploy command as `npm run deploy`. If the installer renames the main Queue, this command also isolates the template's default DLQ as `<selected-queue>-dlq`. It preserves any DLQ name you explicitly configure. Running `wrangler deploy` directly skips this installation adjustment.
+
 After configuring a destination, check:
 
 ```text

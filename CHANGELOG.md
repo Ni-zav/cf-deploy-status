@@ -25,6 +25,7 @@ The project follows Semantic Versioning for both the deployed Worker contract an
 
 ### Fixed
 
+- The installation deploy command now derives an isolated DLQ when the Deploy-to-Cloudflare form renames the main Queue but retains the template's default DLQ name.
 - Deploy-to-Cloudflare setup no longer declares optional destinations as mandatory secrets or duplicates ordinary Wrangler variables as masked inputs. Destination secrets are configured after deployment.
 - Dogfood deployments with a custom Worker name now isolate their event Queue and DLQ instead of sharing the production notifier's consumer.
 - Generic webhook destinations hosted by another Worker on the same zone now use public fetch routing instead of failing with Cloudflare error 1042.

@@ -25,6 +25,8 @@ The project follows Semantic Versioning for both the deployed Worker contract an
 
 ### Fixed
 
+- Fixed Workers deployment-history reconciliation to parse Cloudflare's live `result.deployments` response shape; the mismatch was discovered during authenticated dogfood deployment and is covered by a regression test.
+
 - Events are no longer acknowledged as processed when zero notification destinations are configured; they retry and can reach the DLQ instead.
 - Invalid `PROJECTS_JSON` is surfaced by readiness checks rather than looking like an empty valid configuration.
 

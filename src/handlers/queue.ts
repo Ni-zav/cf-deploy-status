@@ -25,7 +25,7 @@ export async function handleQueue(batch: MessageBatch<unknown>, env: Env): Promi
     try {
       const event = await eventFromMessage(message.body, env);
       if (!event) {
-        console.error("Dropping unknown queue message", message.body);
+        console.error("Dropping unknown queue message");
         message.ack();
         continue;
       }

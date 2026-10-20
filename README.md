@@ -294,6 +294,11 @@ curl -X POST "https://<worker>/v1/test" \
   -d '{"product":"workers","project":"smoke-test","status":"succeeded","environment":"test"}'
 ```
 
+## Engineering evidence
+
+- [Reliability and failure-isolation case study](docs/RELIABILITY_CASE_STUDY.md)
+  documents the retry protocol, deterministic failure-matrix tests, and limits.
+
 ## Notification reliability
 
 Queue processing uses deterministic event IDs plus two layers of KV state:
